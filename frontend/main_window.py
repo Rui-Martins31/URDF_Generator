@@ -1,4 +1,3 @@
-import trimesh
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QAction,
@@ -13,8 +12,9 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from backend.load_model import scene_load
+from backend.scene_description import SceneDescription
 from frontend.viewport import Viewport
+from frontend.properties_panel import PropertiesPanel
 
 
 class MainWindow(QMainWindow):
@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("URDF Generator")
         self.resize(1200, 800)
 
-        self._scene: trimesh.Scene | None = None
+        self._scene_desc: SceneDescription | None = None
 
         self._build_top_menu()
         self._build_central()
@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(open_action)
 
     def _build_central(self) -> None:
-        splitter = QSplitter(Qt.Horizontal)
+        self._splitter = QSplitter(Qt.Horizontal)
 
         # Left panel: geometry list
         left        = QWidget()
@@ -56,18 +56,25 @@ class MainWindow(QMainWindow):
         self._geo_list = QListWidget()
         self._geo_list.setMaximumWidth(240)
         self._geo_list.itemChanged.connect(self._on_item_changed)
+        self._geo_list.itemClicked.connect(self._on_item_clicked)
         left_layout.addWidget(self._geo_list)
 
-        splitter.addWidget(left)
+        self._splitter.addWidget(left)
 
-        # Right panel: 3D viewport
+        # Centre panel: 3D viewport
         self._viewport = Viewport()
-        splitter.addWidget(self._viewport)
+        self._viewport.geometry_selected.connect(self._select_geometry)
+        self._splitter.addWidget(self._viewport)
 
-        splitter.setStretchFactor(0, 0)
-        splitter.setStretchFactor(1, 1)
+        # Right panel: properties
+        self._props_panel = PropertiesPanel()
+        self._splitter.addWidget(self._props_panel)
 
-        self.setCentralWidget(splitter)
+        self._splitter.setStretchFactor(0, 0)
+        self._splitter.setStretchFactor(1, 1)
+        self._splitter.setStretchFactor(2, 0)
+
+        self.setCentralWidget(self._splitter)
 
     def _build_status_bar(self) -> None:
         self._status       = QStatusBar()
@@ -89,25 +96,52 @@ class MainWindow(QMainWindow):
         self._load(path)
 
     def _load(self, path: str) -> None:
-        scene       = scene_load(path)
-        self._scene = scene
-        self._populate_geo_list(scene)
-        self._viewport.load_scene(scene)
-        count       = len(scene.geometry)
-        self._status_label.setText(f"Loaded: {path}  |  {count} geometr{'y' if count == 1 else 'ies'}")
+        self._scene_desc = SceneDescription(path)
+        self._props_panel.clear()
+        self._populate_geo_list(self._scene_desc.scene.geometry)
+        self._viewport.load_scene(self._scene_desc.scene)
+        count = len(self._scene_desc.scene.geometry)
+        self._status_label.setText(
+            f"Loaded: {path}  |  {count} geometr{'y' if count == 1 else 'ies'}"
+        )
 
-    def _populate_geo_list(self, scene: trimesh.Scene) -> None:
+    def _populate_geo_list(self, scene_geometry: dict) -> None:
         self._geo_list.blockSignals(True)
         self._geo_list.clear()
-        for name in scene.geometry:
+        for name in scene_geometry:
             item = QListWidgetItem(name)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(Qt.Checked)
             self._geo_list.addItem(item)
         self._geo_list.blockSignals(False)
 
+    def _on_item_clicked(self, item: QListWidgetItem) -> None:
+        self._select_geometry(item.text())
+
+    def _select_geometry(self, name: str) -> None:
+        if self._scene_desc is None:
+            return
+
+        link = next(
+            (l for l in self._scene_desc.links if l.name == name), None
+        )
+        if link:
+            self._props_panel.show_link(link)
+        else:
+            self._props_panel.clear()
+
+        self._viewport.set_selected(name)
+
+        # Sync list highlight without re-triggering itemChanged
+        self._geo_list.blockSignals(True)
+        for i in range(self._geo_list.count()):
+            item = self._geo_list.item(i)
+            if item is not None:
+                item.setSelected(item.text() == name)
+        self._geo_list.blockSignals(False)
+
     def _on_item_changed(self, item: QListWidgetItem) -> None:
-        if self._scene is None:
+        if self._scene_desc is None:
             return
         name = item.text()
         if item.checkState() == Qt.Checked:

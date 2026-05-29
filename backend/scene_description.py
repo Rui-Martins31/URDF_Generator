@@ -1,7 +1,18 @@
 import numpy as np
 import trimesh
+from enum import Enum
 
 from link_description import LinkDescription
+
+# Constants
+class UpdateMode(Enum):
+    ## Update Mode
+    # 0 -> add
+    # 1 -> remove
+
+    ADD    = 0
+    REMOVE = 1
+
 
 # Utils
 def scene_print_geometries_list(
@@ -25,15 +36,17 @@ class SceneDescription:
         self.file_path: str = file_path
 
         # Scene
-        self.scene: trimesh.Scene = self.load_scene(self.file_path)
+        self.scene: trimesh.Scene = trimesh.Scene()
+        self.load_scene(self.file_path)
 
         # Links
         self.links: list[LinkDescription] = []
+        self.update_link_info()
     
     def load_scene(
         self,
         file_path: str
-    ) -> trimesh.Scene:
+    ) -> None:
 
         # Load scene
         scene = trimesh.load_scene(file_path)
@@ -42,14 +55,13 @@ class SceneDescription:
         if not scene.is_valid:
             scene = trimesh.Scene()
 
-        # Update geometry list
-        self.update_link_info()
+        self.scene = scene
 
         ## DEBUG
         print("Loaded Scene!")
         scene_print_geometries_list(scene)
         
-        return scene
+        return
     
     def add_geometry(
         self,
@@ -60,7 +72,7 @@ class SceneDescription:
         scene.add_geometry(
             trimesh.load_mesh(file_path)
         )
-        self.update_link_info()
+        self.update_link_info(name)
         print("Geometry was added to scene.")
 
         return scene
@@ -77,7 +89,7 @@ class SceneDescription:
             scene.delete_geometry(
                 name
             )
-            self.update_link_info()
+            self.update_link_info(name)
             print("Geometry was deleted from scene.")
 
         else:
@@ -85,5 +97,36 @@ class SceneDescription:
 
         return scene
     
-    def update_link_info(self):
-        pass
+    def update_link_info(
+        self,
+        link_name:   str        = '',
+        update_mode: UpdateMode = UpdateMode.ADD
+    ) -> None:
+        
+        # Check if it's first call
+        if not self.links:
+            for name, _ in self.scene.geometry.items():
+                self.links.append(LinkDescription(name))
+            print(f"Populated the links list for the first time!")
+
+        # Add/Remove geometry
+        elif link_name != '':
+
+            match update_mode:
+                case UpdateMode.ADD:
+                    self.links.append(LinkDescription(link_name))
+                    print(f"Added new link: {link_name}")
+
+                case UpdateMode.REMOVE:
+                    _link_tmp = None
+                    for _link in self.links:
+                        if _link.name == link_name:
+                            _link_tmp = _link
+                    
+                    if _link_tmp: 
+                        self.links.remove(_link_tmp)
+                        print(f"Removed new link: {link_name}")
+
+        # Throw warning
+        else:
+            print(f"Invalid link name: {link_name}")
