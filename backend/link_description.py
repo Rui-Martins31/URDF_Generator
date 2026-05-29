@@ -11,7 +11,7 @@ LINK TAGS -> https://wiki.ros.org/urdf/XML/link
     <origin xyz="x y z" rpy="r p y" />
     <geometry>
         <cylinder radius="r" length="l"/>
-        <mesh filename="path" scale="s"/>   ## package://<packagename>/<path> 
+        <mesh filename="path" scale="s"/>   ## package://<packagename>/<path>
         <box size="s">
         <sphere radius="r">
     </geometry>
@@ -25,15 +25,37 @@ LINK TAGS -> https://wiki.ros.org/urdf/XML/link
     <origin xyz="x y z" rpy="r p y"/>
     <geometry>
         <cylinder radius="r" length="l"/>
-        <mesh filename="path" scale="s"/>   ## package://<packagename>/<path> 
+        <mesh filename="path" scale="s"/>   ## package://<packagename>/<path>
         <box size="s">
         <sphere radius="r">
     </geometry>
 </collision>
 """
 
-from geometry_description import GeometryDescription
+from dataclasses import dataclass, field
+from geometry_description import GeometryDescription, BoxGeometry
 from material_description import MaterialDescription
+
+
+@dataclass
+class InertialDescription:
+    origin:  list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # [x y z r p y]
+    mass:    float       = 0.0
+    inertia: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # [ixx ixy ixz iyy iyz izz]
+
+
+@dataclass
+class VisualDescription:
+    origin:   list[float]         = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # [x y z r p y]
+    geometry: GeometryDescription = field(default_factory=BoxGeometry)
+    material: MaterialDescription = field(default_factory=MaterialDescription)
+
+
+@dataclass
+class CollisionDescription:
+    origin:   list[float]         = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])  # [x y z r p y]
+    geometry: GeometryDescription = field(default_factory=BoxGeometry)
+
 
 class LinkDescription:
 
@@ -41,26 +63,9 @@ class LinkDescription:
         self,
         link_name: str
     ) -> None:
-        
-        # Name
-        self.name: str = link_name
-        
-        # Inertial
-        self.inertial: dict = {
-            "origin":  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], # [x y z r p y]
-            "mass":    0.0,
-            "inertia": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], # [ixx  ixy  ixz iyy iyz izz]
-        }
 
-        # Visual
-        self.visual: dict = {
-            "origin":   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], # [x y z r p y]
-            "geometry": [], # GeometryDescription
-            "material": [], # MaterialDescription
-        }
-
-        # Collision
-        self.collision: dict = {
-            "origin":   [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], # [x y z r p y]
-            "geometry": [], # GeometryDescription
-        }
+        # Tags
+        self.name:      str                        = link_name
+        self.inertial:  InertialDescription        = InertialDescription()
+        self.visual:    list[VisualDescription]    = []
+        self.collision: list[CollisionDescription] = []

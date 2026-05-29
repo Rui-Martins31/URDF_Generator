@@ -3,28 +3,35 @@ GEOMETRY TAGS -> https://wiki.ros.org/urdf/XML/link
 
 <geometry>
     <cylinder radius="r" length="l"/>
-    <mesh filename="path" scale="s"/>   ## package://<packagename>/<path> 
+    <mesh filename="path" scale="s"/>   ## package://<packagename>/<path>
     <box size="s">
     <sphere radius="r">
 </geometry>
 """
 
-class GeometryDescription:
+from dataclasses import dataclass
 
-    def __init__(
-        self,
-        geometry_type: str = "box"
-    ) -> None:
-        
-        match geometry_type:
-            case "box":
-                pass
 
-            case "cylinder":
-                pass
+@dataclass
+class BoxGeometry:
+    size: float = 0.0
 
-            case "sphere":
-                pass
 
-            case "mesh":
-                pass
+@dataclass
+class CylinderGeometry:
+    radius: float = 0.0
+    length: float = 0.0
+
+
+@dataclass
+class SphereGeometry:
+    radius: float = 0.0
+
+
+@dataclass
+class MeshGeometry:
+    filename: str = ''
+    scale: float = 1.0
+
+
+GeometryDescription = BoxGeometry | CylinderGeometry | SphereGeometry | MeshGeometry

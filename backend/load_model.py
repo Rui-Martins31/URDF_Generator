@@ -62,8 +62,12 @@ if __name__ == "__main__":
     file_path: str = 'example/pile_of_cubes/pile_of_cubes.dae'
     scene = scene_load(file_path)
 
+    # Add/remove logic
     scene_remove_geometry(scene, "Cube_004-mesh")
     scene_print_geometries_list(scene)
 
     scene_remove_geometry(scene, "Cube_004-mes")
     scene_print_geometries_list(scene)
+
+    # Geometry info
+    print(list(scene.geometry.items())[0])

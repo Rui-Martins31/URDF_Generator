@@ -27,8 +27,8 @@ class SceneDescription:
         # Scene
         self.scene: trimesh.Scene = self.load_scene(self.file_path)
 
-        # Geometry
-        self.geometry_info: list[LinkDescription] = []
+        # Links
+        self.links: list[LinkDescription] = []
     
     def load_scene(
         self,
@@ -43,7 +43,7 @@ class SceneDescription:
             scene = trimesh.Scene()
 
         # Update geometry list
-        self.update_geometry_info()
+        self.update_link_info()
 
         ## DEBUG
         print("Loaded Scene!")
@@ -60,7 +60,7 @@ class SceneDescription:
         scene.add_geometry(
             trimesh.load_mesh(file_path)
         )
-        self.update_geometry_info()
+        self.update_link_info()
         print("Geometry was added to scene.")
 
         return scene
@@ -77,7 +77,7 @@ class SceneDescription:
             scene.delete_geometry(
                 name
             )
-            self.update_geometry_info()
+            self.update_link_info()
             print("Geometry was deleted from scene.")
 
         else:
@@ -85,5 +85,5 @@ class SceneDescription:
 
         return scene
     
-    def update_geometry_info(self):
+    def update_link_info(self):
         pass

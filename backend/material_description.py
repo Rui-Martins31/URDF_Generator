@@ -7,11 +7,10 @@ MATERIAL TAGS -> https://wiki.ros.org/urdf/XML/link
 </material>
 """
 
+from dataclasses import dataclass, field
+
+
+@dataclass
 class MaterialDescription:
-
-    def __init__(self) -> None:
-        # Color
-        self.color: list[float] = [0.0, 0.0, 0.0, 0.0] # [r g b a]
-
-        # Material
-        self.material_path: str = ''
+    color: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 1.0])  # [r g b a]
+    texture_path: str = ''
