@@ -23,7 +23,8 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("URDF Generator")
         self.resize(1200, 800)
 
-        self._scene_desc: SceneDescription | None = None
+        self._scene_desc:   SceneDescription | None = None
+        self._selected_geo: str | None              = None
 
         self._build_top_menu()
         self._build_central()
@@ -68,6 +69,8 @@ class MainWindow(QMainWindow):
 
         # Right panel: properties
         self._props_panel = PropertiesPanel()
+        self._props_panel.origin_changed.connect(self._on_origin_changed)
+        self._props_panel.color_changed.connect(self._on_color_changed)
         self._splitter.addWidget(self._props_panel)
 
         self._splitter.setStretchFactor(0, 0)
@@ -122,6 +125,8 @@ class MainWindow(QMainWindow):
         if self._scene_desc is None:
             return
 
+        self._selected_geo = name
+
         link = next(
             (l for l in self._scene_desc.links if l.name == name), None
         )
@@ -139,6 +144,14 @@ class MainWindow(QMainWindow):
             if item is not None:
                 item.setSelected(item.text() == name)
         self._geo_list.blockSignals(False)
+
+    def _on_origin_changed(self, origin: list) -> None:
+        if self._selected_geo:
+            self._viewport.update_actor_transform(self._selected_geo, origin)
+
+    def _on_color_changed(self, rgba: list) -> None:
+        if self._selected_geo:
+            self._viewport.update_actor_color(self._selected_geo, rgba)
 
     def _on_item_changed(self, item: QListWidgetItem) -> None:
         if self._scene_desc is None:

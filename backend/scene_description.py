@@ -96,17 +96,17 @@ class SceneDescription:
             print("Geometry does not exist in scene.")
 
         return scene
-    
+
     def update_link_info(
         self,
         link_name:   str        = '',
         update_mode: UpdateMode = UpdateMode.ADD
     ) -> None:
-        
+
         # Check if it's first call
         if not self.links:
-            for name, _ in self.scene.geometry.items():
-                self.links.append(LinkDescription(name))
+            for name in self.scene.geometry:
+                self.links.append(self._make_link(name))
             print(f"Populated the links list for the first time!")
 
         # Add/Remove geometry
@@ -114,7 +114,7 @@ class SceneDescription:
 
             match update_mode:
                 case UpdateMode.ADD:
-                    self.links.append(LinkDescription(link_name))
+                    self.links.append(self._make_link(link_name))
                     print(f"Added new link: {link_name}")
 
                 case UpdateMode.REMOVE:
@@ -130,3 +130,16 @@ class SceneDescription:
         # Throw warning
         else:
             print(f"Invalid link name: {link_name}")
+
+
+    # Helpers
+    def _make_link(self, name: str) -> LinkDescription:
+        link    = LinkDescription(name)
+        geo     = self.scene.geometry.get(name)
+        
+        if isinstance(geo, trimesh.Trimesh) and len(geo.vertices):
+            xyz                  = geo.vertices.mean(axis=0).tolist()
+            roll, pitch, yaw     = 0.0, 0.0, 0.0
+            link.inertial.origin = xyz + [roll, pitch, yaw]
+
+        return link

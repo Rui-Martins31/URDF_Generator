@@ -32,9 +32,10 @@ class Viewport(QWidget):
         self.plotter.add_axes()
         layout.addWidget(self.plotter)
 
-        self._actors:   dict[str, pv.Actor]        = {}
-        self._colors:   dict[str, tuple[float, float, float]] = {}
-        self._selected: str | None                 = None
+        self._actors:   dict[str, pv.Actor]             = {}
+        self._colors:   dict[str, tuple[float, ...]]   = {}
+        self._origins:  dict[str, np.ndarray]           = {}  # baked vertex centroid per mesh
+        self._selected: str | None                      = None
 
         vtk_iren = getattr(self.plotter.iren, 'interactor', self.plotter.iren)
         vtk_iren.AddObserver("LeftButtonPressEvent", self._on_pick)
@@ -68,11 +69,33 @@ class Viewport(QWidget):
 
         self.plotter.render()
 
+    def update_actor_transform(self, name: str, origin: list[float]) -> None:
+        actor = self._actors.get(name)
+        if actor is None:
+            return
+        x, y, z, r, p, yaw = origin
+        base = self._origins.get(name, np.zeros(3))
+        actor.SetPosition(x - base[0], y - base[1], z - base[2])
+        actor.SetOrientation(np.degrees(r), np.degrees(p), np.degrees(yaw))
+        self.plotter.render()
+
+    def update_actor_color(self, name: str, rgba: list[float]) -> None:
+        actor = self._actors.get(name)
+        if actor is None:
+            return
+        r, g, b = rgba[0], rgba[1], rgba[2]
+        a = rgba[3] if len(rgba) > 3 else 1.0
+        actor.GetProperty().SetColor(r, g, b)
+        actor.GetProperty().SetOpacity(a)
+        self._colors[name] = (r, g, b)
+        self.plotter.render()
+
     def clear(self) -> None:
         for actor in self._actors.values():
             self.plotter.remove_actor(actor)
         self._actors.clear()
         self._colors.clear()
+        self._origins.clear()
         self._selected = None
 
     # ---------------------------------------------------------------- private
@@ -92,8 +115,9 @@ class Viewport(QWidget):
             opacity=1.0,
             name=name,
         )
-        self._actors[name] = actor
-        self._colors[name] = actor.GetProperty().GetColor()
+        self._actors[name]  = actor
+        self._colors[name]  = actor.GetProperty().GetColor()
+        self._origins[name] = np.array(geo.vertices).mean(axis=0)
 
     def _on_pick(self, obj, event) -> None:
         x, y = obj.GetEventPosition()

@@ -1,3 +1,4 @@
+from PyQt5.QtCore import pyqtSignal, QLocale
 from PyQt5.QtWidgets import (
     QDoubleSpinBox,
     QFormLayout,
@@ -13,6 +14,9 @@ from backend.link_description import LinkDescription, VisualDescription
 
 
 class PropertiesPanel(QWidget):
+    origin_changed = pyqtSignal(list)   # [x, y, z, r, p, yaw]
+    color_changed  = pyqtSignal(list)   # [r, g, b, a]
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMaximumWidth(280)
@@ -53,40 +57,40 @@ class PropertiesPanel(QWidget):
         form  = QFormLayout(group)
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
 
-        self._ori_x = self._make_spinbox()
-        self._ori_y = self._make_spinbox()
-        self._ori_z = self._make_spinbox()
-        self._ori_r = self._make_spinbox()
-        self._ori_p = self._make_spinbox()
-        self._ori_y = self._make_spinbox()
-        self._mass  = self._make_spinbox(minimum=0.0)
-        self._ixx   = self._make_spinbox()
-        self._ixy   = self._make_spinbox()
-        self._ixz   = self._make_spinbox()
-        self._iyy   = self._make_spinbox()
-        self._iyz   = self._make_spinbox()
-        self._izz   = self._make_spinbox()
+        self._ori_x   = self._make_spinbox()
+        self._ori_y   = self._make_spinbox()
+        self._ori_z   = self._make_spinbox()
+        self._ori_r   = self._make_spinbox()
+        self._ori_p   = self._make_spinbox()
+        self._ori_yaw = self._make_spinbox()
+        self._mass    = self._make_spinbox(minimum=0.0)
+        self._ixx     = self._make_spinbox()
+        self._ixy     = self._make_spinbox()
+        self._ixz     = self._make_spinbox()
+        self._iyy     = self._make_spinbox()
+        self._iyz     = self._make_spinbox()
+        self._izz     = self._make_spinbox()
 
-        form.addRow("Origin X:", self._ori_x)
-        form.addRow("Origin Y:", self._ori_y)
-        form.addRow("Origin Z:", self._ori_z)
-        form.addRow("Origin R:", self._ori_r)
-        form.addRow("Origin P:", self._ori_p)
-        form.addRow("Origin Y:", self._ori_y)
-        form.addRow("Mass:",     self._mass)
-        form.addRow("Ixx:",      self._ixx)
-        form.addRow("Ixy:",      self._ixy)
-        form.addRow("Ixz:",      self._ixz)
-        form.addRow("Iyy:",      self._iyy)
-        form.addRow("Iyz:",      self._iyz)
-        form.addRow("Izz:",      self._izz)
+        form.addRow("Origin X:",   self._ori_x)
+        form.addRow("Origin Y:",   self._ori_y)
+        form.addRow("Origin Z:",   self._ori_z)
+        form.addRow("Origin R:",   self._ori_r)
+        form.addRow("Origin P:",   self._ori_p)
+        form.addRow("Origin Yaw:", self._ori_yaw)
+        form.addRow("Mass:",       self._mass)
+        form.addRow("Ixx:",        self._ixx)
+        form.addRow("Ixy:",        self._ixy)
+        form.addRow("Ixz:",        self._ixz)
+        form.addRow("Iyy:",        self._iyy)
+        form.addRow("Iyz:",        self._iyz)
+        form.addRow("Izz:",        self._izz)
 
-        self._ori_x.valueChanged.connect(lambda v: self._write_origin(0, v))
-        self._ori_y.valueChanged.connect(lambda v: self._write_origin(1, v))
-        self._ori_z.valueChanged.connect(lambda v: self._write_origin(2, v))
-        self._ori_r.valueChanged.connect(lambda v: self._write_origin(3, v))
-        self._ori_p.valueChanged.connect(lambda v: self._write_origin(4, v))
-        self._ori_y.valueChanged.connect(lambda v: self._write_origin(5, v))
+        self._ori_x.valueChanged.connect(  lambda v: self._write_origin(0, v))
+        self._ori_y.valueChanged.connect(  lambda v: self._write_origin(1, v))
+        self._ori_z.valueChanged.connect(  lambda v: self._write_origin(2, v))
+        self._ori_r.valueChanged.connect(  lambda v: self._write_origin(3, v))
+        self._ori_p.valueChanged.connect(  lambda v: self._write_origin(4, v))
+        self._ori_yaw.valueChanged.connect(lambda v: self._write_origin(5, v))
         self._mass.valueChanged.connect( lambda v: self._write_mass(v))
         self._ixx.valueChanged.connect(  lambda v: self._write_inertia(0, v))
         self._ixy.valueChanged.connect(  lambda v: self._write_inertia(1, v))
@@ -146,7 +150,7 @@ class PropertiesPanel(QWidget):
         self._ori_z.setValue(ori[2])
         self._ori_r.setValue(ori[3])
         self._ori_p.setValue(ori[4])
-        self._ori_y.setValue(ori[5])
+        self._ori_yaw.setValue(ori[5])
         self._mass.setValue(link.inertial.mass)
 
         inertia = link.inertial.inertia
@@ -177,6 +181,7 @@ class PropertiesPanel(QWidget):
     def _write_origin(self, idx: int, val: float) -> None:
         if self._current_link:
             self._current_link.inertial.origin[idx] = val
+            self.origin_changed.emit(list(self._current_link.inertial.origin))
 
     def _write_mass(self, val: float) -> None:
         if self._current_link:
@@ -193,6 +198,7 @@ class PropertiesPanel(QWidget):
                 color.extend([0.0] * (idx + 1 - len(color)))
             color[idx] = val
             self._refresh_swatch()
+            self.color_changed.emit(list(color))
 
     def _write_texture(self, val: str) -> None:
         if self._current_visual:
@@ -202,7 +208,7 @@ class PropertiesPanel(QWidget):
     def _set_signals_blocked(self, blocked: bool) -> None:
         for w in (
             self._ori_x, self._ori_y, self._ori_z,
-            self._ori_r, self._ori_p, self._ori_y,
+            self._ori_r, self._ori_p, self._ori_yaw,
             self._mass,
             self._ixx, self._ixy, self._ixz,
             self._iyy, self._iyz, self._izz,
@@ -227,6 +233,7 @@ class PropertiesPanel(QWidget):
         decimals: int  =  6,
     ) -> QDoubleSpinBox:
         sb = QDoubleSpinBox()
+        sb.setLocale(QLocale(QLocale.C))
         sb.setRange(minimum, maximum)
         sb.setSingleStep(step)
         sb.setDecimals(decimals)
