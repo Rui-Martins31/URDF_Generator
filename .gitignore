@@ -17,3 +17,6 @@ mock/
 
 # Files
 *.blend1
+
+# Added by cargo
+/target
