@@ -4,7 +4,7 @@ Terms below follow [glossary.md](glossary.md). Stories are grouped by epic and r
 
 ## Epic 1: FBX Import & Hierarchy
 
-- **US-1**: As a user, I want to import a single FBX file containing my full robot assembly, so that I can start building a URDF without pre-splitting my model.
+- **US-1**: As a user, I want to import a single FBX file containing my full robot assembly, so that I can start building a URDF without pre-splitting my model. ✅
 - **US-2**: As a user, I want to see a visual tree of all meshes in the imported FBX, so that I understand the structure of my model before defining Links.
 - **US-3**: As a user, I want to multi-select meshes and group them into a single Link, so that I can treat related sub-parts as one rigid body.
 - **US-4**: As a user, I want to rename a Link after grouping, so that my URDF output has meaningful, readable names instead of default mesh names.

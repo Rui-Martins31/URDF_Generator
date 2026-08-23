@@ -1,4 +1,5 @@
 use russimp::scene::{PostProcess, Scene};
+use russimp::mesh::Mesh;
 
 // Struct Scene
 pub struct SceneDescriptor {
@@ -13,12 +14,16 @@ impl SceneDescriptor {
             path,
             vec![PostProcess::Triangulate, PostProcess::ValidateDataStructure],
         )
-        .expect("Failed to load scene");
+        .expect("Failed to load scene"); // FIX THIS TO HANDLE ERRORS PROPERLY 
         
         // Return
         return SceneDescriptor {
             scene_content: scene
         };
+    }
+
+    pub fn get_meshes(self) -> Vec<Mesh> {
+        self.scene_content.meshes
     }
 
     pub fn print_content(&self) {
